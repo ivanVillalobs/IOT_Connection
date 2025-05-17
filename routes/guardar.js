@@ -1,41 +1,40 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db');
-const moment = require('moment');
+const pool = require('../db');
 
-router.post('/', async (req, res) => {
+router.post('/guardar', async (req, res) => {
   try {
-    const { mac_Id, x, y, z, timestamp } = req.body;
+    const { mac_Id, xMag, yMag, zMag, timestamp } = req.body;
 
-    const fechaHora = moment(Number(timestamp));
-    const fecha = fechaHora.format('YYYY-MM-DD');
-    const hora = fechaHora.format('HH:mm:ss');
+    if (!mac_Id || xMag === undefined || yMag === undefined || zMag === undefined || !timestamp) {
+      return res.status(400).json({ error: 'Faltan datos requeridos.' });
+    }
 
-    const dispositivoID = await obtenerDispositivoID(mac_Id);
-    const usuarioID = await obtenerUsuarioID(dispositivoID);
+    const dateObj = new Date(timestamp);
+    const fecha = dateObj.toISOString().split('T')[0]; // YYYY-MM-DD
+    const hora = dateObj.toTimeString().split(' ')[0]; // HH:MM:SS
 
     const sql = `
-      INSERT INTO Lecturas
-      (DispocitivoID, UsuarioID, Coordenada_X, Coordenada_Y, Coordenada_Z, Fecha, Hora)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO lecturas (
+        DispocitivoID,
+        UsuarioID,
+        Nivel,
+        Coordenada_X,
+        Coordenada_Y,
+        Coordenada_Z,
+        Fecha,
+        Hora
+      ) VALUES (?, NULL, NULL, ?, ?, ?, ?, ?)
     `;
 
-    await db.query(sql, [dispositivoID, usuarioID, x, y, z, fecha, hora]);
+    await pool.query(sql, [mac_Id, xMag, yMag, zMag, fecha, hora]);
 
-    res.status(200).json({ message: 'Lectura guardada correctamente' });
+    res.status(200).json({ message: 'Datos guardados correctamente' });
+
   } catch (error) {
-    console.error('Error al guardar:', error);
-    res.status(500).json({ error: 'Fallo al guardar datos' });
+    console.error('Error al guardar en DB:', error);
+    res.status(500).json({ error: 'Error en el servidor' });
   }
 });
-
-// Estas funciones deberías reemplazarlas más adelante con tu lógica real
-async function obtenerDispositivoID(mac_Id) {
-  return 1; // ID fijo por ahora
-}
-
-async function obtenerUsuarioID(dispositivoID) {
-  return 1; // ID fijo por ahora
-}
 
 module.exports = router;

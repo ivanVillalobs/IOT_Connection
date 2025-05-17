@@ -1,13 +1,22 @@
 const express = require('express');
-const app = express();
 require('dotenv').config();
 
-const guardarRuta = require('./routes/guardar');
+const guardarRouter = require('./routes/guardar');
 
+const app = express();
+const port = process.env.PORT || 3000;
+
+// Middleware para leer JSON en los requests
 app.use(express.json());
-app.use('/api/guardar', guardarRuta);
 
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+// Ruta para guardar datos
+app.use('/api', guardarRouter);
+
+// Ruta para chequear que el servidor está activo (opcional)
+app.get('/', (req, res) => {
+  res.send('API funcionando');
+});
+
+app.listen(port, () => {
+  console.log(`Servidor escuchando en puerto ${port}`);
 });
